@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <windows.h>
 
 #define total 13
 #define filled 11
@@ -21,25 +20,25 @@ typedef struct bottle
 
 typedef struct bottles_status
 {
-	//Subscript of bottles:
-	//[0,filled-1]: full whit sand
-	//[filled,total-1]: empty
-	//eg 0-10 11-12
+	//Snapshot of Standardized bottles
 	bottle bottles[total];
-	//op
+	//Operation log
 	int send;
 	int receive;
-	//father
+	//father node
 	struct bottles_status *father;
-	//sort
-	//struct bottles_status *previous;
+	//sort node
 	struct bottles_status *next;
 }bottles_status/*, *bottles_status_pointer*/;
 
 //Global Variables
+
+//Subscript of bottles:
+//[0,filled-1]: full with sand
+//[filled,total-1]: empty
+//eg 0-10 11-12
 bottle bottles[total];
-int hopest;
-FILE *logfile;
+FILE *resultfile;
 
 bottles_status* new_bottles_status(bottle *b, bottles_status *father, int send, int receive)
 {
@@ -77,16 +76,16 @@ int compare_bottle(bottle *a, bottle *b)
 	int ret = 0;
 	int *p = a->color + 3;
 	int *q = b->color + 3;
-    while((q >= b->color) && !(ret = *p - *q))
+	while((q >= b->color) && !(ret = *p - *q))
 	{
 		--p;
 		--q;
 	}
-    if(ret < 0)
-        ret = -1;
-    else if(ret > 0)
-        ret = 1;
-    return ret;
+	if(ret < 0)
+		ret = -1;
+	else if(ret > 0)
+		ret = 1;
+	return ret;
 }
 
 int compare_bottles_status(bottles_status *a, bottles_status *b)
@@ -95,15 +94,15 @@ int compare_bottles_status(bottles_status *a, bottles_status *b)
 	bottle *p = a->bottles;
 	bottle *q = b->bottles;
 	bottle *o = q;
-    while((q - o < total) && !(ret = compare_bottle(p, q)))
+	while((q - o < total) && !(ret = compare_bottle(p, q)))
 	{
 		++p;
 		++q;
 	}
-    return ret;
+	return ret;
 }
 
-//inline sort
+//Bubble sort, Internal
 void Standardize(bottle *b)
 {
 	int i, j;
@@ -131,11 +130,11 @@ bottles_status* locate_status(bottles_status *head, bottles_status *current, int
 	else
 	{
 		*result = 1;
-        if (q == head)
-            head = current;
-        else
-            p->next = current;
-        current->next = q;
+		if (q == head)
+			head = current;
+		else
+			p->next = current;
+		current->next = q;
 	}
 	return head;
 }
@@ -165,63 +164,34 @@ void printbottles(bottles_status *p)
 	{
 		for(j = 0; j < total; j++)
 		{
-			fprintf(logfile, "%02d ", target[j].color[i]);
+			fprintf(resultfile, "%02d ", target[j].color[i]);
 		}
-		fprintf(logfile, "\n");
+		fprintf(resultfile, "\n");
 	}
 	/*
-	fprintf(logfile, "\n");
+	fprintf(resultfile, "\n");
 	for(j = 0; j < total; j++)
 	{
-		fprintf(logfile, "%02d ", j);
+		fprintf(resultfile, "%02d ", j);
 	}
 	*/
-	fprintf(logfile, "\n");
-	//Sleep(500);
-	//getchar();
-}
-
-void printstatus_address_from_son(bottles_status *p)
-{
-	while(p)
-	{
-		fprintf(logfile, "%p ", p);
-		p = p->father;
-	}
-	fprintf(logfile, "\n");
-}
-
-void printstatus_address_from_head(bottles_status *p)
-{
-	while(p)
-	{
-		fprintf(logfile, "%p ", p);
-		p = p->next;
-	}
-	fprintf(logfile, "\n");
+	fprintf(resultfile, "\n");
 }
 
 void printstatus_log_number(bottles_status *p)
 {
-	char buffer[1000];
-	int i = 0;
-	int l;
-	memset(buffer, 0, 100);
+	fprintf(resultfile, "Reverse Operation:\n");
 	while(p)
 	{
-		fprintf(logfile, "%d %d  ", p->send, p->receive);
-		l = sprintf(buffer + i, "%d %d  ", p->send, p->receive);
-		i += l;
+		fprintf(resultfile, "%02d -> %02d\n", p->send, p->receive);
 		p = p->father;
 	}
-	fprintf(logfile, "\n");
-	if(memcmp(buffer, "0 1  10 1  9 11  1 3  5 12  1 0  1 10  10 5  5 7  7 12  3 11  1 12  0 11  0 0  ", 79) == 0)
-		fprintf(logfile, "get\n");
+	fprintf(resultfile, "\n");
 }
 
 void printstatus_log_bottles(bottles_status *p)
 {
-	printbottles(NULL);
+	fprintf(resultfile, "History(Standardized):\n");
 	while(p)
 	{
 		printbottles(p);
@@ -229,21 +199,7 @@ void printstatus_log_bottles(bottles_status *p)
 	}
 }
 
-void printlog(bottles_status *head, bottles_status *current)
-{
-	fprintf(logfile, "This is printlog:\n");
-	fprintf(logfile, "This is printstatus_address_from_head:\n");
-	printstatus_address_from_head(head);
-	fprintf(logfile, "This is printstatus_address_from_son:\n");
-	printstatus_address_from_son(current);
-	fprintf(logfile, "This is printstatus_log_number:\n");
-	printstatus_log_number(current);
-	fprintf(logfile, "Now bottles is:\n");
-	printbottles(NULL);
-	fprintf(logfile, "\n\n");
-}
-
-//return: hopest bottle
+//return: The most promising bottle
 int next_usable(int send, int receive, int nextcolor)
 {
 	int i;
@@ -256,13 +212,13 @@ int next_usable(int send, int receive, int nextcolor)
 		if((!bottles[i].color[bottles[i].depth]) || (nextcolor == bottles[i].color[bottles[i].depth]))
 			return i;
 	}
-	return -1;
+	return 0;
 }
 
 //cala step
 //can move:return step  [1,3]
 //cannot move:return step = 0
-int calastep(int send, int receive)
+int calastep(int send, int receive, int *hope)
 {
 	int sdepth;
 	int rdepth;
@@ -281,22 +237,18 @@ int calastep(int send, int receive)
 	//when receive is full: rdepth equal to 0, so (step < rdepth) equal to false
 	while((sdepth + step < 4) && (step < rdepth) && (bottles[send].color[sdepth + step] == color))
 		step++;
-	//most of the cases go out here
-	if(!step)
-		return step;
-	//avoid unused move, go out here when something about bottle.flag wrong
-	if(step == 4)
+	//In most of the cases, step is equal to 0
+	if(step)
 	{
-		step = 0;
-		printf("step equal to 4.\n");
-		return step;
-	}
-	//here do judge about future: is this op discover a usable state
-	hopest = next_usable(send, receive, bottles[send].color[sdepth + step]);
-	if(hopest < 0)
-	{
-		//step = 0;
-		return step;
+		//avoid unused move, go out here when something about bottle.flag wrong
+		if(step == 4)
+		{
+			step = 0;
+			printf("step equal to 4.\n");
+			return step;
+		}
+		//here do judge about future: find the most promising bottle
+		*hope = next_usable(send, receive, bottles[send].color[sdepth + step]);
 	}
 	return step;
 }
@@ -310,14 +262,12 @@ int move(int send, int receive, int step)
 		bottles[receive].color[bottles[receive].depth - 1 - i] = bottles[send].color[bottles[send].depth + i];
 		bottles[send].color[bottles[send].depth + i] = 0;
 	}
-	//depth, of course it could cala by bottles[send].depth/bottles[receive].depth
+	//depth
 	bottles[send].depth += step;
 	bottles[receive].depth -= step;
 	//flag
 	if((bottles[receive].color[1] == bottles[receive].color[0]) && (bottles[receive].color[2] == bottles[receive].color[0]) && (bottles[receive].color[3] == bottles[receive].color[0]))
 		bottles[receive].flag = 1;
-	//fprintf(logfile, "move:%d %d %d\n", send, receive, step);
-	//printbottles(NULL);
 	return 0;
 }
 
@@ -326,7 +276,7 @@ int unmove(int send, int receive, int step)
 	int i;
 	//flag
 	bottles[receive].flag = 0;
-	//depth, of crouse it could cover by bottles[send].depth/bottles[receive].depth
+	//depth
 	bottles[send].depth -= step;
 	bottles[receive].depth += step;
 	//color
@@ -335,8 +285,6 @@ int unmove(int send, int receive, int step)
 		bottles[send].color[bottles[send].depth + i] = bottles[receive].color[bottles[receive].depth - 1 - i];
 		bottles[receive].color[bottles[receive].depth - 1 - i] = 0;
 	}
-	//fprintf(logfile, "unmove:%d %d %d\n", send, receive, step);
-	//printbottles(NULL);
 	return 0;
 }
 
@@ -346,17 +294,15 @@ int go(int sendhome, int receivehome, bottles_status **head, bottles_status *fat
 	int receive;
 	int step;
 	int result = 0;
+	int hope = 0;
 	bottles_status *new_node;
 
-	//log
-	printlog(*head, father);
 	if(check())
 	{
 		printf("Success!\n");
 		printstatus_log_number(father);
-		getchar();
-		exit(0);
-		//return 0;
+		printstatus_log_bottles(father);
+		return 0;
 	}
 	for(send = sendhome; send < sendhome + total; send++)
 	{
@@ -366,7 +312,7 @@ int go(int sendhome, int receivehome, bottles_status **head, bottles_status *fat
 		{
 			if(receive % total == send % total)
 				continue;
-			step = calastep(send % total, receive % total);
+			step = calastep(send % total, receive % total, &hope);
 			if(step)
 			{
 				move(send % total, receive % total, step);
@@ -375,7 +321,8 @@ int go(int sendhome, int receivehome, bottles_status **head, bottles_status *fat
 				*head = locate_status(*head, new_node, &result);
 				if(result > 0)
 				{
-					go(hopest, send, head, new_node);
+					if(!go(hope, send, head, new_node))
+						return 0;
 				}
 				else
 				{
@@ -394,35 +341,36 @@ int main()
 	int i;
 	FILE *in;
 	bottles_status *head;
-	in = fopen("in.txt", "r");
-	logfile = fopen("log.txt", "w+");
+
+	if(!(in = fopen("in.txt", "r")))
+		return 0;
+	if(!(resultfile = fopen("result.txt", "w+")))
+		return 0;
 	//init bottles
 	memset(bottles, 0, total * sizeof(bottle));
 	for(i = 0; i < filled; i++)
 	{
 		fscanf(in, "%d %d %d %d", &bottles[i].color[0], &bottles[i].color[1], &bottles[i].color[2], &bottles[i].color[3]);
 	}
+	fclose(in);
 	for(; i < total; i++)
 	{
 		bottles[i].depth = 4;
 	}
-	fclose(in);
 	//print
-	printf("Init data:\n");
+	fprintf(resultfile, "Init data:\n");
 	printbottles(NULL);
-	printf("Start:\n");
 	//init head
 	head = new_bottles_status(bottles, NULL, 0, 0);
 	Standardize(head->bottles);
-	go(0, filled, &head, head);
+	if(go(0, filled, &head, head))
+		printf("No solution!\n");
 	if(head)
 	{
 		free_bottles_status_linklist(head);
 		head = NULL;
 	}
-    printf("No solution!\n");
-    fclose(logfile);
-    getchar();
-    exit(0);
-    return 0;
+	fclose(resultfile);
+	getchar();
+	return 0;
 }
