@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define total 13
-#define filled 11
+#define total 14
+#define filled 12
 
 typedef struct bottle
 {
