@@ -229,7 +229,7 @@ int calastep(int send, int receive, int *hope)
 	rdepth = bottles[receive].depth;
 	step = 0;
 	color = bottles[receive].color[rdepth];
-	//when receive is empty, any colors are available, so it is decided by sand
+	//when receive is empty, any colors are available, so it is decided by send
 	if(color == 0)
 		color = bottles[send].color[sdepth];
 	//judge the color of send and receive
