@@ -178,9 +178,22 @@ void printbottles(bottles_status *p)
 	fprintf(resultfile, "\n");
 }
 
+void organize_steps(bottles_status *p)
+{
+	bottles_status *previous, *next;
+	previous = NULL;
+	while(p)
+	{
+		next = p->father;
+		p->father = previous;
+		previous = p;
+		p = next;
+	}
+}
+
 void printstatus_log_number(bottles_status *p)
 {
-	fprintf(resultfile, "Reverse Operation:\n");
+	fprintf(resultfile, "Operation:\n");
 	while(p)
 	{
 		fprintf(resultfile, "%02d -> %02d\n", p->send, p->receive);
@@ -299,9 +312,7 @@ int go(int sendhome, int receivehome, bottles_status **head, bottles_status *fat
 
 	if(check())
 	{
-		printf("Success!\n");
-		printstatus_log_number(father);
-		printstatus_log_bottles(father);
+		organize_steps(father);
 		return 0;
 	}
 	for(send = sendhome; send < sendhome + total; send++)
@@ -340,7 +351,8 @@ int main()
 {
 	int i;
 	FILE *in;
-	bottles_status *head;
+	//At first, head_linklist is just head_steps, but head_linklist will change.
+	bottles_status *head_steps, *head_linklist;
 
 	if(!(in = fopen("in.txt", "r")))
 		return 0;
@@ -361,14 +373,24 @@ int main()
 	fprintf(resultfile, "Init data:\n");
 	printbottles(NULL);
 	//init head
-	head = new_bottles_status(bottles, NULL, 0, 0);
-	Standardize(head->bottles);
-	if(go(0, filled, &head, head))
-		printf("No solution!\n");
-	if(head)
+	head_steps = new_bottles_status(bottles, NULL, 0, 0);
+	head_linklist = head_steps;
+	Standardize(head_linklist->bottles);
+	if(!go(0, filled, &head_linklist, head_steps))
 	{
-		free_bottles_status_linklist(head);
-		head = NULL;
+		printf("Success!\n");
+		printstatus_log_number(head_steps);
+		printstatus_log_bottles(head_steps);
+	}
+	else
+	{
+		printf("No solution!\n");
+	}
+	if(head_linklist)
+	{
+		free_bottles_status_linklist(head_linklist);
+		head_linklist = NULL;
+		head_steps = NULL;
 	}
 	fclose(resultfile);
 	getchar();
