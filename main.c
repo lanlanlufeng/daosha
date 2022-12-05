@@ -208,12 +208,14 @@ void organize_steps(bottles_status *p)
 void printstatus_log_number(bottles_status *p)
 {
 	fprintf(resultfile, "Operation:\n");
+	//skip the first node with action "00 -> 00"
+	p = p->father;
 	while(p)
 	{
-		fprintf(resultfile, "%02d -> %02d\n", p->send, p->receive);
+		fprintf(resultfile, "%02d -> %02d\n", p->send + 1, p->receive + 1);
 		p = p->father;
 	}
-	fprintf(resultfile, "\n");
+	fprintf(resultfile, "End.\n\n");
 }
 
 void printstatus_log_bottles(bottles_status *p)
