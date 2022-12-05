@@ -181,6 +181,7 @@ void printbottles(bottles_status *p)
 void organize_steps(bottles_status *p)
 {
 	bottles_status *previous, *next;
+	//reverse
 	previous = NULL;
 	while(p)
 	{
@@ -188,6 +189,19 @@ void organize_steps(bottles_status *p)
 		p->father = previous;
 		previous = p;
 		p = next;
+	}
+	//filtering
+	if(!(p = previous->father))
+		return;
+	next = p->father;
+	while(next)
+	{
+		if((p->send == next->receive) && (p->receive == next->send))
+			previous->father = next;
+		else
+			previous = p;
+		p = next;
+		next = next->father;
 	}
 }
 
