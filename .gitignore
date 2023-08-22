@@ -3,6 +3,7 @@ result.txt
 
 /bin/
 /obj/
+/.vscode/
 daosha.cbp
 daosha.depend
 daosha.layout
