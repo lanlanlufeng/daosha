@@ -3,19 +3,33 @@
 #include <string.h>
 #include <stdbool.h>
 
+//the quantity of bottles
 #define total 14
 #define filled 12
 
 typedef struct bottle
 {
-	//color: 0 means any colors are all right, [1,filled] means the kinds of color, eg 0 1-11
-	//subscript[0..3] means the four sub from top to bottom, subscript[4] is always equal to 0
+	/*color:
+		value: 0 means any colors are all right, [1,filled] means the kinds of color
+		subscript: [0..3] means the four sub from top to bottom, [4] is always equal to 0
+	*/
 	int color[5];
-	//cover color: the cover color of this bottle, 0 means this bottle is empty
-	//depth: the subscript of cover color, so (cover == color[depth])
+	/*depth: 
+		depth is one subscript of array "color", positions above depth are all empty
+		so the cover(the first sand which is not empty) color is just the color[depth]
+	*/
 	int depth;
-	//flag: 1 means all of c0, c1, c2, c3 of this bottle are same, this bottle cannot move after
+	//flag: 1 means color[0], color[1], color[2], color[3] are all same, this bottle cannot move after
 	int flag;
+	/*example
+		color[0]=0 top
+		color[1]=0
+		color[2]=4
+		color[3]=3 bottom
+		color[4]=0 always equal to 0
+		depth=2
+		flag=0
+	*/
 }bottle;
 
 typedef struct bottles_status
@@ -25,18 +39,13 @@ typedef struct bottles_status
 	//Operation log
 	int send;
 	int receive;
-	//father node
+	//logic linked list, records the last operation
 	struct bottles_status *father;
-	//sort node
+	//memory linked list, records the next bottles_status
 	struct bottles_status *next;
 }bottles_status/*, *bottles_status_pointer*/;
 
 //Global Variables
-
-//Subscript of bottles:
-//[0,filled-1]: full with sand
-//[filled,total-1]: empty
-//eg 0-10 11-12
 bottle bottles[total];
 FILE *resultfile;
 
@@ -168,12 +177,14 @@ void printbottles(bottles_status *p)
 		}
 		fprintf(resultfile, "\n");
 	}
+	//print the number of bottles
 	/*
 	fprintf(resultfile, "\n");
 	for(j = 0; j < total; j++)
 	{
 		fprintf(resultfile, "%02d ", j);
 	}
+	fprintf(resultfile, "\n");
 	*/
 	fprintf(resultfile, "\n");
 }
@@ -244,9 +255,10 @@ int next_usable(int send, int receive, int nextcolor)
 	return 0;
 }
 
-//cala step
-//can move:return step  [1,3]
-//cannot move:return step = 0
+/*return step:
+	0: cannot move
+	[1,3]: can move
+*/
 int calastep(int send, int receive, int *hope)
 {
 	int sdepth;
@@ -257,11 +269,11 @@ int calastep(int send, int receive, int *hope)
 	sdepth = bottles[send].depth;
 	rdepth = bottles[receive].depth;
 	step = 0;
+	//judge the color of send and receive
 	color = bottles[receive].color[rdepth];
 	//when receive is empty, any colors are available, so it is decided by send
 	if(color == 0)
 		color = bottles[send].color[sdepth];
-	//judge the color of send and receive
 	//when send is empty: sdepth equal to 4, so (sdepth + step < 4) equal to false
 	//when receive is full: rdepth equal to 0, so (step < rdepth) equal to false
 	while((sdepth + step < 4) && (step < rdepth) && (bottles[send].color[sdepth + step] == color))
@@ -367,14 +379,21 @@ int main()
 {
 	int i;
 	FILE *in;
-	//At first, head_linklist is just head_steps, but head_linklist will change.
+	/*
+		head_steps: logic head, records the sequence of operations
+		head_linklist: memory head, records ordered bottles_status
+	*/
 	bottles_status *head_steps, *head_linklist;
 
 	if(!(in = fopen("in.txt", "r")))
 		return 0;
 	if(!(resultfile = fopen("result.txt", "w+")))
 		return 0;
-	//init bottles
+	/*init bottles:
+		At the beginning,
+			bottles[0,filled-1]: full with sand
+			bottles[filled,total-1]: empty
+	*/
 	memset(bottles, 0, total * sizeof(bottle));
 	for(i = 0; i < filled; i++)
 	{
@@ -389,6 +408,7 @@ int main()
 	fprintf(resultfile, "Init data:\n");
 	printbottles(NULL);
 	//init head
+	//At first, head_linklist is just head_steps, but head_linklist will change.
 	head_steps = new_bottles_status(bottles, NULL, 0, 0);
 	head_linklist = head_steps;
 	Standardize(head_linklist->bottles);
