@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 //the quantity of bottles
-#define total 14
-#define filled 12
+#define total 16
+#define filled 13
 
 typedef struct bottle
 {
@@ -14,7 +14,7 @@ typedef struct bottle
 		subscript: [0..3] means the four sub from top to bottom, [4] is always equal to 0
 	*/
 	int color[5];
-	/*depth: 
+	/*depth:
 		depth is one subscript of array "color", positions above depth are all empty
 		so the cover(the first sand which is not empty) color is just the color[depth]
 	*/
